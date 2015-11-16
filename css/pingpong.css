@@ -1,0 +1,25 @@
+#game {
+  position: relative;
+  background-color: lightblue;
+  width: 512px;
+  height: 256px;
+  border-color: black;
+  border-width: thick;
+}
+#playground {
+  position: absolute;
+  background-color: red;
+  width: 100%;
+  height: 100%;
+}
+#gameboard {
+  position: absolute;
+  background-color: #061771; /* blue */
+  width: 100%;
+  height: 100%;
+}
+#headsupdisplay {
+  background-color: brown;
+  width:  512px;
+  color: white;
+}
