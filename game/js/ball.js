@@ -16,7 +16,7 @@ class Ball {
     this.x += this.vx * this.speed;
     this.y += this.vy * this.speed;
   };
-  draw(p) {
-    p.fillRect(this.x, this.y, this.width, this.height);
+  draw(ctx) {
+    ctx.fillRect(this.x, this.y, this.width, this.height);
   };
 }

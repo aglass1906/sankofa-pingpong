@@ -5,6 +5,7 @@
 class KeyListener {
   constructor() {
     this.pressedKeys = [];
+    this.lastKeyPressed = "";
 
     //iniital key binding
     document.addEventListener("keydown", this.keydown.bind(this));
@@ -13,10 +14,13 @@ class KeyListener {
   }
   keydown(e) {
     this.pressedKeys[e.keyCode] = true;
+    this.lastKeyPressed = e.keyCode;
+
   };
 
   keyup(e) {
     this.pressedKeys[e.keyCode] = false;
+    this.lastKeyPressed = "";
   };
 
   isPressed(key)  {
