@@ -45,13 +45,13 @@ class GameEngine {
 
     this.keys = new KeyListener();
 
-    this.p1 = new Paddle(5, 0, "player1");
-    this.p1.y = this.height/2 - this.p1.height/2;
-    this.display1 = new Display(this.width/4, 25, this.p1.name);
+    this.player1 = new Paddle(5, 0, "player1");
+    this.player1.y = this.height/2 - this.player1.height/2;
+    this.display1 = new Display(this.width/4, 25, this.player1.name);
 
-    this.p2 = new Paddle(this.width - 5 - 2, 0,"player2");
-    this.p2.y = this.height/2 - this.p2.height/2;
-    this.display2 = new Display(this.width*3/4, 25, this.p2.name);
+    this.player2 = new Player(this.width - 5 - 2, 0,"player2");
+    this.player2.y = this.height/2 - this.player2.height/2;
+    this.display2 = new Display(this.width*3/4, 25, this.player2.name);
 
     this.headsUpDisplay = new Display(0,0,"Headsup");
 
@@ -93,8 +93,8 @@ class GameEngine {
 
     this.ball.draw(this.context);
 
-    this.p1.draw(this.context);
-    this.p2.draw(this.context);
+    this.player1.draw(this.context);
+    this.player2.draw(this.context);
 
     this.display1.draw(this.context);
     this.display2.draw(this.context);
@@ -121,23 +121,14 @@ class GameEngine {
 
     this.ball.update();
 
-    // this.p1.update();
-    // this.p2.update();
+    this.player1.update(this.keys);
+    this.player1.y = Math.min(this.height - this.player1.height, this.player1.y);
+    this.player1.x = Math.min(this.width - this.player1.width, this.player1.x);
 
+    this.player2.update(this.keys);
+    this.player2.y = Math.min(this.height - this.player2.height, this.player2.y);
+    this.player2.x = Math.min(this.width - this.player2.width, this.player2.x);
 
-    // Player 1 paddle - direction based on the arrow keys
-    if (this.keys.isPressed(83)) { // DOWN
-      this.p1.y = Math.min(this.height - this.p1.height, this.p1.y + 4);
-    } else if (this.keys.isPressed(87)) { // UP
-      this.p1.y = Math.max(0, this.p1.y - 4);
-    }
-
-    // Player 2 paddle direction based on arrow keys
-    if (this.keys.isPressed(40)) { // DOWN
-      this.p2.y = Math.min(this.height - this.p2.height, this.p2.y + 4);
-    } else if (this.keys.isPressed(38)) { // UP
-      this.p2.y = Math.max(0, this.p2.y - 4);
-    }
   };
 
   sendObjectChangesToServer(){
@@ -188,30 +179,30 @@ class GameEngine {
       return;
 
     //collision detection
-    //collision detection - does it collide with the right paddle?
-    //collision detection - does it collide with the left paddle?
+    //collision detection - does ball collide with the player 2?
     if (this.ball.vx > 0) {
-      if (this.p2.x <= this.ball.x + this.ball.width &&
-        this.p2.x > this.ball.x - this.ball.vx + this.ball.width) {
-          var collisionDiff = this.ball.x + this.ball.width - this.p2.x;
+      if (this.player2.x <= this.ball.x + this.ball.width &&
+        this.player2.x > this.ball.x - this.ball.vx + this.ball.width) {
+          var collisionDiff = this.ball.x + this.ball.width - this.player2.x;
           var k = collisionDiff/this.ball.vx;
           var y = this.ball.vy*k + (this.ball.y - this.ball.vy);
-          if (y >= this.p2.y && y + this.ball.height <= this.p2.y + this.p2.height) {
-            // collides with right paddle
-            this.ball.x = this.p2.x - this.ball.width;
+          if (y >= this.player2.y && y + this.ball.height <= this.player2.y + this.player2.height) {
+            // collides with player
+            this.ball.x = this.player2.x - this.ball.width;
             this.ball.y = Math.floor(this.ball.y - this.ball.vy + this.ball.vy*k);
             this.ball.vx = -this.ball.vx;
             this.paddleSound.play();
           }
       }
     } else {
-      if (this.p1.x + this.p1.width >= this.ball.x) {
-        var collisionDiff = this.p1.x + this.p1.width - this.ball.x;
+      //collision detection - does ball collide with the player 1?
+      if (this.player1.x + this.player1.width >= this.ball.x) {
+        var collisionDiff = this.player1.x + this.player1.width - this.ball.x;
         var k = collisionDiff/-this.ball.vx;
         var y = this.ball.vy*k + (this.ball.y - this.ball.vy);
-        if (y >= this.p1.y && y + this.ball.height <= this.p1.y + this.p1.height) {
-          // collides with the left paddle
-          this.ball.x = this.p1.x + this.p1.width;
+        if (y >= this.player1.y && y + this.ball.height <= this.player1.y + this.player1.height) {
+          // collides with player
+          this.ball.x = this.player1.x + this.player1.width;
           this.ball.y = Math.floor(this.ball.y - this.ball.vy + this.ball.vy*k);
           this.ball.vx = -this.ball.vx;
           this.paddleSound.play();
@@ -219,10 +210,42 @@ class GameEngine {
       }
     }
 
-    //collision detection - does it collide Top and bottom walls
+    //collision detection - does ball collide Top and bottom walls
     if ((this.ball.vy < 0 && this.ball.y < 0) ||
     (this.ball.vy > 0 && this.ball.y + this.ball.height > this.height)) {
       this.ball.vy = -this.ball.vy;
+    }
+
+    //does the fireball collide with a player
+    if(this.player1.isFiring) {
+      if (this.player2.x + this.player2.width >= this.player1.ball.x) {
+        var collisionDiff = this.player2.x + this.player2.width - this.player1.ball.x;
+        var k = collisionDiff/-this.player1.ball.vx;
+        var y = this.player1.ball.vy*k + (this.player1.ball.y - this.player1.ball.vy);
+        if (y >= this.player2.y && y + this.player1.ball.height <= this.player2.y + this.player2.height) {
+          // collides with the left paddle
+          this.player2.height -=2;
+          this.player2.width +=2;
+
+          this.player1.isFiring = false;
+
+        }
+      }
+    }
+    if(this.player2.isFiring) {
+      if (this.player1.x + this.player1.width >= this.player2.ball.x) {
+        var collisionDiff = this.player1.x + this.player1.width - this.player2.ball.x;
+        var k = collisionDiff/-this.player2.ball.vx;
+        var y = this.player2.ball.vy*k + (this.player2.ball.y - this.player2.ball.vy);
+        if (y >= this.player1.y && y + this.player2.ball.height <= this.player1.y + this.player1.height) {
+          // collides with the left paddle
+          this.player1.height -=2;
+          this.player1.width +=2;
+
+          this.player2.isFiring = false;
+
+        }
+      }
     }
 
   };
@@ -233,17 +256,17 @@ class GameEngine {
     //right goal line
     //left goal line
     if (this.ball.x >= this.width) {
-      this.score(this.p1);
+      this.score(this.player1);
       //this.headsUpDisplay.updateStatus("Player1 Scored!");
     }
     else if (this.ball.x + this.ball.width <= 0) {
-      this.score(this.p2);
+      this.score(this.player2);
       //this.headsUpDisplay.updateStatus("Player2 Scored!");
     }
 
     //update the Scoreboard Display Values
-    this.display1.value = this.p1.score;
-    this.display2.value = this.p2.score;
+    this.display1.value = this.player1.score;
+    this.display2.value = this.player2.score;
 
   };
 
@@ -262,24 +285,29 @@ class GameEngine {
   AI_autoComputerPaddle() {
     var speed = 1.0;
     var direction = 1;
+    var simulated_key_press = 0;
 
     // var x = this.Player1_Avitar.style.left;
     // var y = this.Player1_Avitar.style.top;
 
-    var paddleY = this.p1.y + this.p1.height/2;
+    var paddleY = this.player1.y + this.player1.height/2;
     if (paddleY > this.ball.y) {
       direction = -1;
+      simulated_key_press = 83;
+    }
+    else {
+      simulated_key_press = 87;
     }
 
-    this.p1.y += speed * direction;
+    this.player1.y += speed * direction;
 
-    // var p1Avitar = document.getElementById("paddleA");//app
-    // p1Avitar.style.top = "" + (this.p1.y+5) + "px";
-    // p1Avitar.style.left = "" + (this.p1.x -5)+ "px";
+    // var player1Avitar = document.getElementById("paddleA");//app
+    // player1Avitar.style.top = "" + (this.player1.y+5) + "px";
+    // player1Avitar.style.left = "" + (this.player1.x -5)+ "px";
 
     // //update avitar
-    // $("#paddleA").css("top", this.p1.y);
-    // $("#paddleA").css("left", this.p1.x);
+    // $("#paddleA").css("top", this.player1.y);
+    // $("#paddleA").css("left", this.player1.x);
 
   };
 
@@ -289,7 +317,7 @@ class GameEngine {
 
     // player scores
     p.score++;
-    var player = p == this.p1 ? 0 : 1;
+    var player = p == this.player1 ? 0 : 1;
 
 
     //update the headsup display
@@ -305,8 +333,8 @@ class GameEngine {
     this.ball.y = p.y + p.height/2;
 
     //update the Scoreboard Display
-    this.display1.value = this.p1.score;
-    this.display2.value = this.p2.score;
+    this.display1.value = this.player1.score;
+    this.display2.value = this.player2.score;
 
     // set ball velocity
     this.ball.vy = Math.floor(Math.random()*12 - 6);
@@ -322,13 +350,13 @@ class GameEngine {
 
   isGameover(p){
     //is game over???
-    if ( (this.p1.score >= this.maxScore) || (this.p2.score >= this.maxScore) ) {
-      if(this.p1.score > this.p2.score) {
-        var final_score = "(" + this.p1.score + " to " + this.p2.score + ")";
+    if ( (this.player1.score >= this.maxScore) || (this.player2.score >= this.maxScore) ) {
+      if(this.player1.score > this.player2.score) {
+        var final_score = "(" + this.player1.score + " to " + this.player2.score + ")";
         this.headsUpDisplay.updateStatus("Game Over...Player 1 wins! " + final_score);
       }
       else {
-        var final_score = "(" + this.p1.score + " to " + this.p2.score + ")";
+        var final_score = "(" + this.player1.score + " to " + this.player2.score + ")";
         this.headsUpDisplay.updateStatus("Game Over...Player 2 wins! " + final_score);
       }
       this.paused = true;
@@ -341,8 +369,8 @@ class GameEngine {
   updateScoreBoard(){
 
     //update the Scoreboard Display
-    this.display1.value = this.p1.score;
-    this.display2.value = this.p2.score;
+    this.display1.value = this.player1.score;
+    this.display2.value = this.player2.score;
 
   };
 }
